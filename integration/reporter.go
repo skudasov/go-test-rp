@@ -230,16 +230,37 @@ func (m *RPAgent) getTimeBounds(events []*TestEvent) (time.Time, time.Time) {
 	return b[0].Time, b[len(b)-1].Time
 }
 
+func getTimeBoundsByElapsed(events []*TestEvent) (time.Time, time.Time) {
+	startTime := events[0].Time
+	finishTime := events[len(events)-1].Time.Add(time.Duration(events[len(events)-1].Elapsed) * time.Second)
+	return startTime, finishTime
+}
+
 func (m *RPAgent) testrailTestcaseDesc(to *TestObject) string {
 	return strconv.Itoa(to.CaseID) + " " + to.Desc
 }
 
+func debugDumpEventsToFile(groupedTestEventsBatch map[string][]*TestEvent) {
+	for ename, e := range groupedTestEventsBatch {
+		f, err := os.Create(strings.ReplaceAll(ename, "/", "_") + ".tlog")
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, ev := range e {
+			ev.Output = ""
+			d, err := json.Marshal(ev)
+			if err != nil {
+				log.Fatal(err)
+			}
+			f.Write([]byte(string(d) + "\n"))
+		}
+		f.Close()
+	}
+}
+
 func eventsToObjects(events []*TestEvent) []*TestObject {
 	groupedTestEventsBatch := groupEventsByTest(events)
-	//f, err := os.Open("events.log")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+	//debugDumpEventsToFile(groupedTestEventsBatch)
 	return EventsToTestObjects(groupedTestEventsBatch)
 }
 
@@ -273,18 +294,19 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 			}
 			// start test items, starting from parents to child, add to alreadyStartedTestEntities
 			if _, ok := alreadyStartedTestEntities[tpath]; !ok {
-				//earliest, latest := m.getTimeBounds(to.RawEvents)
+				m.l.Infof("tpath : %s\n", tpath)
+				earliest, latest := getTimeBoundsByElapsed(to.RawEvents)
 				if tIdx > 0 {
 					parent = alreadyStartedTestEntities[pathArray[tIdx-1]].TestItemId
 					itemType = "STEP"
 				}
 				m.l.Debugf("starting test: %s, parent: %s\n", tpath, parent)
-				id, err := m.c.StartTestItemId(parent, tpath, itemType, time.Now().Format(time.RFC3339), tpath, nil, nil)
+				id, err := m.c.StartTestItemId(parent, tpath, itemType, earliest.Format(time.RFC3339), tpath, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
 				m.l.Debugf("test started: name: %s, id: %s\n", tpath, id)
-				endTime := time.Now().Format(time.RFC3339)
+				endTime := latest.Format(time.RFC3339)
 				alreadyStartedTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
 				mustFinishTestEntities[to.FullPath+tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
 
