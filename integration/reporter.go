@@ -137,6 +137,8 @@ type TestObject struct {
 	IssueURL    string
 	IssueTicket string
 	RawEvents   []*TestEvent
+	StartTime   time.Time
+	EndTime     time.Time
 	OutputBatch []string
 }
 
@@ -184,6 +186,7 @@ func EventsToTestObjects(events map[string][]*TestEvent) []*TestObject {
 	tests := make([]*TestObject, 0)
 	for _, eventsBatch := range events {
 		t := &TestObject{}
+		t.StartTime, t.EndTime = getTimeBounds(eventsBatch)
 		for _, e := range eventsBatch {
 			t.Package = e.Package
 			t.GoTestName = e.Test
@@ -221,13 +224,8 @@ func EventsToTestObjects(events map[string][]*TestEvent) []*TestObject {
 }
 
 // Getting earliest and latest times to use it in StartItem or FinishItem calls
-func (m *RPAgent) getTimeBounds(events []*TestEvent) (time.Time, time.Time) {
-	b := make([]*TestEvent, len(events))
-	copy(b, events)
-	sort.Slice(b, func(i, j int) bool {
-		return b[i].Time.Before(b[j].Time)
-	})
-	return b[0].Time, b[len(b)-1].Time
+func getTimeBounds(events []*TestEvent) (time.Time, time.Time) {
+	return events[0].Time, events[len(events)-1].Time
 }
 
 func getTimeBoundsByElapsed(events []*TestEvent) (time.Time, time.Time) {
@@ -264,6 +262,12 @@ func eventsToObjects(events []*TestEvent) []*TestObject {
 	return EventsToTestObjects(groupedTestEventsBatch)
 }
 
+func sortTestObjectsByStartTime(to []*TestObject) {
+	sort.Slice(to, func(i, j int) bool {
+		return to[i].StartTime.Before(to[j].StartTime)
+	})
+}
+
 func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) error {
 	f, err := os.Open(jsonFilename)
 	if err != nil {
@@ -276,7 +280,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	alreadyStartedTestEntities := make(map[string]*RPTestEntity)
 	mustFinishTestEntities := make(map[string]*RPTestEntity)
 
-	earliestInReport, latestInReport := m.getTimeBounds(events)
+	earliestInReport, latestInReport := getTimeBounds(events)
 	m.l.Debug("report time bounds: %s -> %s", earliestInReport, latestInReport)
 	tags := strings.Split(tag, ",")
 	_, err = m.c.StartLaunch(runName, runName, earliestInReport.Format(time.RFC3339), tags, "DEFAULT")
@@ -284,6 +288,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 		m.l.Fatalf("error creating launch: %s", err)
 	}
 
+	sortTestObjectsByStartTime(testObjects)
 	for _, to := range testObjects {
 		parent := ""
 		itemType := "TEST"
@@ -294,19 +299,18 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 			}
 			// start test items, starting from parents to child, add to alreadyStartedTestEntities
 			if _, ok := alreadyStartedTestEntities[tpath]; !ok {
-				m.l.Infof("tpath : %s\n", tpath)
-				earliest, latest := getTimeBoundsByElapsed(to.RawEvents)
+				m.l.Infof("fpath : %s, parent: %s, duration: %s\n", to.FullPath, parent, to.EndTime.Sub(to.StartTime))
 				if tIdx > 0 {
 					parent = alreadyStartedTestEntities[pathArray[tIdx-1]].TestItemId
 					itemType = "STEP"
 				}
 				m.l.Debugf("starting test: %s, parent: %s\n", tpath, parent)
-				id, err := m.c.StartTestItemId(parent, tpath, itemType, earliest.Format(time.RFC3339), tpath, nil, nil)
+				id, err := m.c.StartTestItemId(parent, tpath, itemType, to.StartTime.Format(time.RFC3339), tpath, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
 				m.l.Debugf("test started: name: %s, id: %s\n", tpath, id)
-				endTime := latest.Format(time.RFC3339)
+				endTime := to.EndTime.Format(time.RFC3339)
 				alreadyStartedTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
 				mustFinishTestEntities[to.FullPath+tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
 
@@ -327,7 +331,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 		if startedObj.IssueURL != "" {
 			issue = m.linkIssue(startedObj)
 		}
-		if _, err := m.c.FinishTestItemId(startedObj.TestItemId, stat, time.Now().Format(time.RFC3339), issue); err != nil {
+		if _, err := m.c.FinishTestItemId(startedObj.TestItemId, stat, startedObj.EndTime, issue); err != nil {
 			log.Fatal(err)
 		}
 	}
