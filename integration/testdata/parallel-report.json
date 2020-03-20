@@ -1,0 +1,76 @@
+{"Time":"2019-02-01T14:21:30.046489+03:00","Action":"run","Package":"github.com/f4hrenh9it/somepackage","Test":"Test_Something"}
+{"Time":"2019-02-01T14:21:30.048181+03:00","Action":"output","Package":"github.com/f4hrenh9it/somepackage","Test":"Test_Something","Output":"--- PASS: TestClient_StartLaunch (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.050747+03:00","Action":"fail","Package":"github.com/f4hrenh9it/somepackage","Test":"Test_Something","Elapsed":1}
+{"Time":"2019-02-01T14:21:30.046485+03:00","Action":"run","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartLaunch"}
+{"Time":"2019-02-01T14:21:30.047897+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartLaunch","Output":"=== RUN   TestClient_StartLaunch\n"}
+{"Time":"2019-02-01T14:21:30.047942+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartLaunch","Output":"{\"level\":\"info\",\"ts\":1549020090.04768,\"caller\":\"client-go/client.go:76\",\"msg\":\"created new test launch: id1\"}\n"}
+{"Time":"2019-02-01T14:21:30.048181+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartLaunch","Output":"--- PASS: TestClient_StartLaunch (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.048245+03:00","Action":"pass","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartLaunch","Elapsed":0}
+{"Time":"2019-02-01T14:21:30.048288+03:00","Action":"run","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishLaunch"}
+{"Time":"2019-02-01T14:21:30.048307+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishLaunch","Output":"=== RUN   TestClient_FinishLaunch\n"}
+{"Time":"2019-02-01T14:21:30.04863+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishLaunch","Output":"{\"level\":\"info\",\"ts\":1549020090.048584,\"caller\":\"client-go/client.go:100\",\"msg\":\"launch finished: launch_id\"}\n"}
+{"Time":"2019-02-01T14:21:30.048721+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishLaunch","Output":"--- PASS: TestClient_FinishLaunch (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.048763+03:00","Action":"pass","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishLaunch","Elapsed":0}
+{"Time":"2019-02-01T14:21:30.048779+03:00","Action":"run","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem"}
+{"Time":"2019-02-01T14:21:30.048794+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"=== RUN   TestClient_StartTestItem\n"}
+{"Time":"2019-02-01T14:21:30.048809+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"=== PAUSE TestClient_StartTestItem\n"}
+{"Time":"2019-02-01T14:21:30.048824+03:00","Action":"pause","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem"}
+{"Time":"2019-02-01T14:21:30.04884+03:00","Action":"run","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem"}
+{"Time":"2019-02-01T14:21:30.048856+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"=== RUN   TestClient_FinishTestItem\n"}
+{"Time":"2019-02-01T14:21:30.048872+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"=== PAUSE TestClient_FinishTestItem\n"}
+{"Time":"2019-02-01T14:21:30.048888+03:00","Action":"pause","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem"}
+{"Time":"2019-02-01T14:21:30.048904+03:00","Action":"run","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log"}
+{"Time":"2019-02-01T14:21:30.048923+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"=== RUN   TestClient_Log\n"}
+{"Time":"2019-02-01T14:21:30.048945+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"=== PAUSE TestClient_Log\n"}
+{"Time":"2019-02-01T14:21:30.048961+03:00","Action":"pause","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log"}
+{"Time":"2019-02-01T14:21:30.04898+03:00","Action":"run","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem"}
+{"Time":"2019-02-01T14:21:30.048997+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem","Output":"=== RUN   TestClient_LogNotAttachableToLaunchItem\n"}
+{"Time":"2019-02-01T14:21:30.049064+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem","Output":"=== PAUSE TestClient_LogNotAttachableToLaunchItem\n"}
+{"Time":"2019-02-01T14:21:30.049081+03:00","Action":"pause","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem"}
+{"Time":"2019-02-01T14:21:30.049098+03:00","Action":"run","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest"}
+{"Time":"2019-02-01T14:21:30.04911+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest","Output":"=== RUN   TestClient_FailedRequest\n"}
+{"Time":"2019-02-01T14:21:30.049124+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest","Output":"=== PAUSE TestClient_FailedRequest\n"}
+{"Time":"2019-02-01T14:21:30.049137+03:00","Action":"pause","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest"}
+{"Time":"2019-02-01T14:21:30.04915+03:00","Action":"cont","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem"}
+{"Time":"2019-02-01T14:21:30.049162+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"=== CONT  TestClient_StartTestItem\n"}
+{"Time":"2019-02-01T14:21:30.049174+03:00","Action":"cont","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem"}
+{"Time":"2019-02-01T14:21:30.049223+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem","Output":"=== CONT  TestClient_LogNotAttachableToLaunchItem\n"}
+{"Time":"2019-02-01T14:21:30.049239+03:00","Action":"cont","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log"}
+{"Time":"2019-02-01T14:21:30.049278+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"=== CONT  TestClient_Log\n"}
+{"Time":"2019-02-01T14:21:30.049304+03:00","Action":"cont","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest"}
+{"Time":"2019-02-01T14:21:30.049327+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest","Output":"=== CONT  TestClient_FailedRequest\n"}
+{"Time":"2019-02-01T14:21:30.049353+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest","Output":"{\"level\":\"info\",\"ts\":1549020090.0488791,\"caller\":\"client-go/client.go:116\",\"msg\":\"starting test item of type: SUITE\"}\n"}
+{"Time":"2019-02-01T14:21:30.049384+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest","Output":"{\"level\":\"info\",\"ts\":1549020090.048922,\"caller\":\"client-go/client.go:175\",\"msg\":\"attaching log to test item: last_item_id, msg: logmessage, lvl: DEBUG\"}\n"}
+{"Time":"2019-02-01T14:21:30.049432+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem","Output":"--- PASS: TestClient_LogNotAttachableToLaunchItem (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.049465+03:00","Action":"pass","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_LogNotAttachableToLaunchItem","Elapsed":0}
+{"Time":"2019-02-01T14:21:30.049509+03:00","Action":"cont","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem"}
+{"Time":"2019-02-01T14:21:30.049521+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"=== CONT  TestClient_FinishTestItem\n"}
+{"Time":"2019-02-01T14:21:30.049839+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"{\"level\":\"info\",\"ts\":1549020090.049782,\"caller\":\"client-go/client.go:147\",\"msg\":\"finishing test item with status: map[issue_type:NOT_ISSUE], issue: %!s(MISSING)\"}\n"}
+{"Time":"2019-02-01T14:21:30.05019+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"{\"level\":\"info\",\"ts\":1549020090.050161,\"caller\":\"client-go/client.go:133\",\"msg\":\"started test item: item_id\"}\n"}
+{"Time":"2019-02-01T14:21:30.050483+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"{\"level\":\"info\",\"ts\":1549020090.050278,\"caller\":\"client-go/client.go:158\",\"msg\":\"finished test item: Launch with ID = 'launch_id' successfully finished.\"}\n"}
+{"Time":"2019-02-01T14:21:30.050511+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"--- PASS: TestClient_FinishTestItem (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.050538+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"{\"level\":\"info\",\"ts\":1549020090.050169,\"caller\":\"client-go/client.go:186\",\"msg\":\"log attached id: log_id\"}\n"}
+{"Time":"2019-02-01T14:21:30.05057+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Output":"{\"level\":\"error\",\"ts\":1549020090.050379,\"caller\":\"client-go/client.go:251\",\"msg\":\"request failed: status: 403 Forbidden, body: \u0026{%!s(int=0) }\",\"stacktrace\":\"github.com/f4hrenh9it/rpgoclient.(*Client).do\\n\\t/Users/skudasov/client-go/client.go:251\\ngithub.com/f4hrenh9it/rpgoclient.(*Client).StartLaunch\\n\\t/Users/skudasov/client-go/client.go:67\\ngithub.com/f4hrenh9it/rpgoclient.TestClient_FailedRequest\\n\\t/Users/skudasov/client-go/client_test.go:227\\ntesting.tRunner\\n\\t/usr/local/Cellar/go/1.11.4/libexec/src/testing/testing.go:827\"}\n"}
+{"Time":"2019-02-01T14:21:30.050616+03:00","Action":"pass","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FinishTestItem","Elapsed":0}
+{"Time":"2019-02-01T14:21:30.050631+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest","Output":"--- PASS: TestClient_FailedRequest (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.050645+03:00","Action":"pass","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_FailedRequest","Elapsed":0}
+{"Time":"2019-02-01T14:21:30.050657+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"--- FAIL: TestClient_StartTestItem (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.050673+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"    client_test.go:110: \n"}
+{"Time":"2019-02-01T14:21:30.050685+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"        \tError Trace:\tclient_test.go:110\n"}
+{"Time":"2019-02-01T14:21:30.050699+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"        \tError:      \tNot equal: \n"}
+{"Time":"2019-02-01T14:21:30.050711+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"        \t            \texpected: 1\n"}
+{"Time":"2019-02-01T14:21:30.050722+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"        \t            \tactual  : 0\n"}
+{"Time":"2019-02-01T14:21:30.050732+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Output":"        \tTest:       \tTestClient_StartTestItem\n"}
+{"Time":"2019-02-01T14:21:40.050747+03:00","Action":"fail","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_StartTestItem","Elapsed":1000}
+{"Time":"2019-02-01T14:21:30.050759+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"--- FAIL: TestClient_Log (0.00s)\n"}
+{"Time":"2019-02-01T14:21:30.050774+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"    client_test.go:171: \n"}
+{"Time":"2019-02-01T14:21:30.050806+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"        \tError Trace:\tclient_test.go:171\n"}
+{"Time":"2019-02-01T14:21:30.050819+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"        \tError:      \tNot equal: \n"}
+{"Time":"2019-02-01T14:21:30.050832+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"        \t            \texpected: 2\n"}
+{"Time":"2019-02-01T14:21:30.050849+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"        \t            \tactual  : 0\n"}
+{"Time":"2019-02-01T14:21:30.050862+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Output":"        \tTest:       \tTestClient_Log\n"}
+{"Time":"2019-02-01T14:21:30.050876+03:00","Action":"fail","Package":"github.com/f4hrenh9it/rpgoclient","Test":"TestClient_Log","Elapsed":0}
+{"Time":"2019-02-01T14:21:30.050889+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Output":"FAIL\n"}
+{"Time":"2019-02-01T14:21:30.051384+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Output":"exit status 1\n"}
+{"Time":"2019-02-01T14:21:30.051417+03:00","Action":"output","Package":"github.com/f4hrenh9it/rpgoclient","Output":"FAIL\tgithub.com/f4hrenh9it/rpgoclient\t0.022s\n"}
+{"Time":"2019-02-01T14:21:30.051438+03:00","Action":"skip","Package":"github.com/f4hrenh9it/rpgoclient","Elapsed":0.022}

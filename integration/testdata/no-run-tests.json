@@ -1,0 +1,16 @@
+{"Time":"2019-02-11T10:03:48.059047461Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog","Output":"Config File \"_config\" Not Found in \"[/builds/bx/catalog-api/e2e]\"\n"}
+{"Time":"2019-02-11T10:03:48.077678456Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog","Output":"2019/02/11 10:03:48 cannot get auth accessToken, err: Invalid status code: 401. {\"error\":\"access_denied\",\"error_description\":\"The resource owner credentials are invalid.\"}\n"}
+{"Time":"2019-02-11T10:03:48.079556813Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog","Output":"FAIL\tgitlab.ozon.ru/bx/catalog-api/e2e/test_catalog\t0.064s\n"}
+{"Time":"2019-02-11T10:03:48.07959497Z","Action":"fail","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog","Elapsed":0.065}
+{"Time":"2019-02-11T10:03:48.08307183Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog/internal/catalog-admin-api/pb","Output":"?   \tgitlab.ozon.ru/bx/catalog-api/e2e/test_catalog/internal/catalog-admin-api/pb\t[no test files]\n"}
+{"Time":"2019-02-11T10:03:48.083093082Z","Action":"skip","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog/internal/catalog-admin-api/pb","Elapsed":0}
+{"Time":"2019-02-11T10:03:48.083111434Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog/internal/searchapi","Output":"?   \tgitlab.ozon.ru/bx/catalog-api/e2e/test_catalog/internal/searchapi\t[no test files]\n"}
+{"Time":"2019-02-11T10:03:48.083121222Z","Action":"skip","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_catalog/internal/searchapi","Elapsed":0}
+{"Time":"2019-02-11T10:03:48.127331785Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer","Output":"2019/02/11 10:03:48 Config File \"_config\" Not Found in \"[/builds/bx/catalog-api/e2e]\"\n"}
+{"Time":"2019-02-11T10:03:48.13320902Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer","Output":"2019/02/11 10:03:48 cannot get auth accessToken, Invalid status code: 401. {\"error\":\"access_denied\",\"error_description\":\"The resource owner credentials are invalid.\"}\n"}
+{"Time":"2019-02-11T10:03:48.135033388Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer","Output":"FAIL\tgitlab.ozon.ru/bx/catalog-api/e2e/test_composer\t0.072s\n"}
+{"Time":"2019-02-11T10:03:48.13506492Z","Action":"fail","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer","Elapsed":0.072}
+{"Time":"2019-02-11T10:03:48.13851154Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer/internal/catalog-admin-api/pb","Output":"?   \tgitlab.ozon.ru/bx/catalog-api/e2e/test_composer/internal/catalog-admin-api/pb\t[no test files]\n"}
+{"Time":"2019-02-11T10:03:48.138534045Z","Action":"skip","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer/internal/catalog-admin-api/pb","Elapsed":0}
+{"Time":"2019-02-11T10:03:48.138552368Z","Action":"output","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer/internal/composer","Output":"?   \tgitlab.ozon.ru/bx/catalog-api/e2e/test_composer/internal/composer\t[no test files]\n"}
+{"Time":"2019-02-11T10:03:48.138561994Z","Action":"skip","Package":"gitlab.ozon.ru/bx/catalog-api/e2e/test_composer/internal/composer","Elapsed":0}
