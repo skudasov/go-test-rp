@@ -128,22 +128,29 @@ func (m *RPAgent) RunUrl(projectName string) string {
 
 // TestObject represents test data with aggregated log batch
 type TestObject struct {
-	FullPath    string
-	Package     string
-	Status      string
-	CaseID      int
-	Desc        string
-	GoTestName  string
-	IssueURL    string
-	IssueTicket string
-	RawEvents   []*TestEvent
-	StartTime   time.Time
-	EndTime     time.Time
-	OutputBatch []string
+	FullPath       string
+	FullPathCrumbs []string
+	ParentName     string
+	Parent         *TestObject
+	Package        string
+	Status         string
+	CaseID         int
+	Desc           string
+	GoTestName     string
+	IssueURL       string
+	IssueTicket    string
+	RawEvents      []*TestEvent
+	StartTime      time.Time
+	EndTime        time.Time
+	OutputBatch    []string
 }
 
 func UniqTestKey(e *TestEvent) string {
-	return e.Test + "|" + e.Package
+	if e.Test != "" {
+		return e.Package + "|" + strings.Join(strings.Split(e.Test, "/"), "|")
+	} else {
+		return e.Package
+	}
 }
 
 func parseEventsBatch(stream io.Reader) []*TestEvent {
@@ -182,15 +189,25 @@ func groupEventsByTest(events []*TestEvent) map[string][]*TestEvent {
 }
 
 // EventsToTestObjects parses event batches to construct TestObjects, extracting caseID, Description, Status and IssueURL
-func EventsToTestObjects(events map[string][]*TestEvent) []*TestObject {
+func EventsToTestObjects(events map[string][]*TestEvent) ([]*TestObject, map[string]*TestObject) {
 	tests := make([]*TestObject, 0)
+	testsByName := make(map[string]*TestObject)
 	for _, eventsBatch := range events {
 		t := &TestObject{}
 		t.StartTime, t.EndTime = getTimeBounds(eventsBatch)
 		for _, e := range eventsBatch {
 			t.Package = e.Package
 			t.GoTestName = e.Test
-			t.FullPath = e.Package + "|" + strings.Join(strings.Split(e.Test, "/"), "|")
+			t.FullPath = UniqTestKey(e)
+			fpath := strings.Split(t.FullPath, "|")
+			addPath := make([]string, 0)
+			acc := ""
+			for _, fp := range fpath {
+				acc += fp
+				addPath = append(addPath, acc)
+			}
+			t.FullPathCrumbs = addPath
+			t.ParentName = strings.Join(t.FullPathCrumbs[:len(t.FullPathCrumbs)-1], "|")
 			if e.Action == "pass" || e.Action == "skip" || e.Action == "fail" {
 				t.Status = strings.ToUpper(e.Action)
 			}
@@ -219,8 +236,9 @@ func EventsToTestObjects(events map[string][]*TestEvent) []*TestObject {
 			t.RawEvents = append(t.RawEvents, e)
 		}
 		tests = append(tests, t)
+		testsByName[t.FullPath] = t
 	}
-	return tests
+	return tests, testsByName
 }
 
 // Getting earliest and latest times to use it in StartItem or FinishItem calls
@@ -256,16 +274,30 @@ func debugDumpEventsToFile(groupedTestEventsBatch map[string][]*TestEvent) {
 	}
 }
 
-func eventsToObjects(events []*TestEvent) []*TestObject {
+func eventsToObjects(events []*TestEvent) ([]*TestObject, map[string]*TestObject) {
 	groupedTestEventsBatch := groupEventsByTest(events)
 	//debugDumpEventsToFile(groupedTestEventsBatch)
-	return EventsToTestObjects(groupedTestEventsBatch)
+	tos, tosByName := EventsToTestObjects(groupedTestEventsBatch)
+	addParents(tos, tosByName)
+	return tos, tosByName
+}
+
+func addParents(to []*TestObject, tosByName map[string]*TestObject) {
+	for _, o := range to {
+		if len(o.FullPathCrumbs) > 1 {
+			fmt.Printf("child: %s, parent: %s\n", o.FullPath, o.ParentName)
+			o.Parent = tosByName[o.ParentName]
+		}
+	}
 }
 
 func sortTestObjectsByStartTime(to []*TestObject) {
-	sort.Slice(to, func(i, j int) bool {
+	sort.SliceStable(to, func(i, j int) bool {
 		return to[i].StartTime.Before(to[j].StartTime)
 	})
+	//sort.SliceStable(to, func(i, j int) bool {
+	//	return len(to[i].FullPathCrumbs) < len(to[i].FullPathCrumbs)
+	//})
 }
 
 func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) error {
@@ -274,7 +306,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 		log.Fatal(err)
 	}
 	events := parseEventsBatch(f)
-	testObjects := eventsToObjects(events)
+	testObjects, tosByName := eventsToObjects(events)
 	m.l.Infof(InfoColor, fmt.Sprintf("sending report to: %s, project: %s", m.c.GetBaseUrl(), m.c.GetProject()))
 
 	alreadyStartedTestEntities := make(map[string]*RPTestEntity)
@@ -289,19 +321,49 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	}
 
 	sortTestObjectsByStartTime(testObjects)
+
+	//parent := ""
+	//itemType := "TEST"
+	//for _, to := range testObjects {
+	//	if to.Parent != nil {
+	//		id, err := m.c.StartTestItemId(parent, to.FullPath, itemType, to.StartTime.Format(time.RFC3339), to.FullPath, nil, nil)
+	//		if err != nil {
+	//			log.Fatal(err)
+	//		}
+	//	}
+	//	m.l.Infof("starting test: parent: %s, full path: %s\n", to.ParentName, to.FullPath)
+	//	id, err := m.c.StartTestItemId(parent, to.FullPath, itemType, to.StartTime.Format(time.RFC3339), to.FullPath, nil, nil)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	m.l.Debugf("test started: name: %s, id: %s\n", to.FullPath, id)
+	//	endTimeStr := to.EndTime.Format(time.RFC3339)
+	//	alreadyStartedTestEntities[to.FullPath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
+	//	mustFinishTestEntities[to.FullPath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
+	//
+	//	m.l.Debugf("uploading logs to id: %s\n", id)
+	//	_, err = m.c.LogId(id, strings.Join(to.OutputBatch, ""), "INFO")
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}
+
 	for _, to := range testObjects {
 		parent := ""
 		itemType := "TEST"
-		pathArray := strings.Split(to.FullPath, "|")
-		for tIdx, tpath := range pathArray {
+		//pathArray := strings.Split(to.FullPath, "|")
+		for tIdx, tpath := range to.FullPathCrumbs {
 			if tpath == "" {
 				continue
 			}
 			// start test items, starting from parents to child, add to alreadyStartedTestEntities
 			if _, ok := alreadyStartedTestEntities[tpath]; !ok {
-				m.l.Infof("fpath : %s, parent: %s, duration: %s\n", to.FullPath, parent, to.EndTime.Sub(to.StartTime))
+				fmt.Printf("tpath: %s\n", tpath)
+				startTime := tosByName[tpath].StartTime
+				endTime := tosByName[tpath].EndTime
+				m.l.Infof("fpath : %s, parent: %s, duration: %s\n", to.FullPath, to.ParentName, endTime.Sub(startTime))
 				if tIdx > 0 {
-					parent = alreadyStartedTestEntities[pathArray[tIdx-1]].TestItemId
+					parent = alreadyStartedTestEntities[to.ParentName].TestItemId
 					itemType = "STEP"
 				}
 				m.l.Debugf("starting test: %s, parent: %s\n", tpath, parent)
@@ -310,9 +372,9 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 					log.Fatal(err)
 				}
 				m.l.Debugf("test started: name: %s, id: %s\n", tpath, id)
-				endTime := to.EndTime.Format(time.RFC3339)
-				alreadyStartedTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
-				mustFinishTestEntities[to.FullPath+tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
+				endTimeStr := endTime.Format(time.RFC3339)
+				alreadyStartedTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
+				mustFinishTestEntities[to.FullPath+tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
 
 				m.l.Debugf("uploading logs to id: %s\n", id)
 				_, err = m.c.LogId(id, strings.Join(to.OutputBatch, ""), "INFO")
