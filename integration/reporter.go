@@ -300,26 +300,13 @@ func eventsToObjects(events []*TestEvent) ([]*TestObject, map[string]*TestObject
 	groupedTestEventsBatch := groupEventsByTest(events)
 	//debugDumpEventsToFile(groupedTestEventsBatch)
 	tos, tosByName := EventsToTestObjects(groupedTestEventsBatch)
-	addParents(tos, tosByName)
 	return tos, tosByName
-}
-
-func addParents(to []*TestObject, tosByName map[string]*TestObject) {
-	for _, o := range to {
-		if len(o.FullPathCrumbs) > 1 {
-			fmt.Printf("child: %s, parent: %s\n", o.FullPath, o.ParentName)
-			o.Parent = tosByName[o.ParentName]
-		}
-	}
 }
 
 func sortTestObjectsByStartTime(to []*TestObject) {
 	sort.SliceStable(to, func(i, j int) bool {
 		return to[i].StartTime.Before(to[j].StartTime)
 	})
-	//sort.SliceStable(to, func(i, j int) bool {
-	//	return len(to[i].FullPathCrumbs) < len(to[i].FullPathCrumbs)
-	//})
 }
 
 func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) error {
@@ -344,13 +331,14 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	sortTestObjectsByStartTime(testObjects)
 	for _, to := range testObjects {
 		parent := ""
-		itemType := "TEST"
+		//itemType := "TEST"
 		for tIdx, tpath := range to.FullPathCrumbs {
 			// start test items, starting from parents to child, add to alreadyStartedTestEntities
 			if _, ok := alreadyStartedTestEntities[tpath]; !ok {
 				fmt.Printf("tpath: %s\n", tpath)
-				startTime := tosByName[tpath].StartTime.Format(time.RFC3339)
-				endTime := tosByName[tpath].EndTime.Format(time.RFC3339)
+				testObj := tosByName[tpath]
+				startTime := testObj.StartTime.Format(time.RFC3339)
+				endTime := testObj.EndTime.Format(time.RFC3339)
 				if len(strings.Split(tpath, "|")) == 1 {
 					m.l.Infof("module found, setting test startTime = launch startTime")
 					startTime = earliestInReport.Format(time.RFC3339)
@@ -363,11 +351,11 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 					endTime,
 				)
 				if tIdx > 0 {
-					parentName := tosByName[tpath].ParentName
+					parentName := testObj.ParentName
 					parent = alreadyStartedTestEntities[parentName].TestItemId
-					itemType = "STEP"
+					//itemType = "STEP"
 				}
-				id, err := m.c.StartTestItemId(parent, tpath, itemType, startTime, tpath, nil, nil)
+				id, err := m.c.StartTestItemId(parent, tpath, "STEP", startTime, tpath, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
