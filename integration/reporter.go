@@ -216,20 +216,22 @@ func EventsToTestObjects(events map[string][]*TestEvent) ([]*TestObject, map[str
 	testsByName := make(map[string]*TestObject)
 	for _, eventsBatch := range events {
 		t := &TestObject{}
-		t.StartTime, t.EndTime = getTimeBounds(eventsBatch)
+		t.StartTime = eventsBatch[0].Time
+		t.EndTime = eventsBatch[len(eventsBatch)-1].Time
 		for _, e := range eventsBatch {
 			t.Package = e.Package
 			t.GoTestName = e.Test
 			t.FullPath = UniqTestKey(e)
 			t.FullPathCrumbs = breadCrumbsFromFullPath(t.FullPath)
 			if len(t.FullPathCrumbs) > 1 {
-				t.ParentName = t.FullPathCrumbs[:len(t.FullPathCrumbs)-1][0]
+				t.ParentName = t.FullPathCrumbs[len(t.FullPathCrumbs)-2]
 			}
 			if e.Action == "pass" || e.Action == "skip" || e.Action == "fail" {
 				t.Status = strings.ToUpper(e.Action)
 			}
 			if e.Elapsed != 0 {
 				t.Elapsed = time.Duration(e.Elapsed) * time.Second
+				t.EndTime = t.StartTime.Add(time.Duration(e.Elapsed) * time.Second)
 			}
 			if e.Action == "output" {
 				// find TestRail format case id (C**** test description)
@@ -268,7 +270,7 @@ func getTimeBounds(events []*TestEvent) (time.Time, time.Time) {
 
 func getTimeBoundsByElapsed(events []*TestEvent) (time.Time, time.Time) {
 	startTime := events[0].Time
-	finishTime := events[len(events)-1].Time.Add(time.Duration(events[len(events)-1].Elapsed) * time.Second)
+	finishTime := events[0].Time.Add(time.Duration(events[0].Elapsed) * time.Second)
 	return startTime, finishTime
 }
 
@@ -330,7 +332,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	m.l.Infof(InfoColor, fmt.Sprintf("sending report to: %s, project: %s", m.c.GetBaseUrl(), m.c.GetProject()))
 
 	alreadyStartedTestEntities := make(map[string]*RPTestEntity)
-	mustFinishTestEntities := make(map[string]*RPTestEntity)
+	mustFinishTestEntities := make([]*RPTestEntity, 0)
 
 	earliestInReport, latestInReport := getTimeBounds(events)
 	tags := strings.Split(tag, ",")
@@ -347,25 +349,32 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 			// start test items, starting from parents to child, add to alreadyStartedTestEntities
 			if _, ok := alreadyStartedTestEntities[tpath]; !ok {
 				fmt.Printf("tpath: %s\n", tpath)
-				startTime := tosByName[tpath].StartTime
-				endTime := tosByName[tpath].EndTime
+				startTime := tosByName[tpath].StartTime.Format(time.RFC3339)
+				endTime := tosByName[tpath].EndTime.Format(time.RFC3339)
 				if len(strings.Split(tpath, "|")) == 1 {
 					m.l.Infof("module found, setting test startTime = launch startTime")
-					startTime = earliestInReport
+					startTime = earliestInReport.Format(time.RFC3339)
 				}
-				m.l.Infof("starting new test entity: tpath: %s, parent: %s, duration: %d", tpath, to.ParentName, to.Elapsed)
+				m.l.Infof("starting new test entity:\n tpath: %s\n parent: %s\n duration: %d\nstart: %s\n end: %s\n",
+					tpath,
+					to.ParentName,
+					to.Elapsed,
+					startTime,
+					endTime,
+				)
 				if tIdx > 0 {
-					parent = alreadyStartedTestEntities[to.ParentName].TestItemId
+					parentName := tosByName[tpath].ParentName
+					parent = alreadyStartedTestEntities[parentName].TestItemId
 					itemType = "STEP"
 				}
-				id, err := m.c.StartTestItemId(parent, tpath, itemType, startTime.Format(time.RFC3339), tpath, nil, nil)
+				id, err := m.c.StartTestItemId(parent, tpath, itemType, startTime, tpath, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
 				m.l.Debugf("test started: name: %s, id: %s\n", tpath, id)
-				endTimeStr := endTime.Format(time.RFC3339)
-				alreadyStartedTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
-				mustFinishTestEntities[to.FullPath+tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
+				alreadyStartedTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
+				//mustFinishTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
+				mustFinishTestEntities = append(mustFinishTestEntities, &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0})
 
 				m.l.Debugf("uploading logs to id: %s\n", id)
 				_, err = m.c.LogId(id, strings.Join(to.OutputBatch, ""), "INFO")
