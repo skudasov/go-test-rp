@@ -34,16 +34,17 @@ var (
 )
 
 type Clientable interface {
-	StartLaunch(name string, description string, startTimeStringRFC3339 string, tags []string, mode string) (string, error)
+	StartLaunch(name string, description string, startTimeStringRFC3339 string, tags []string, mode string) (rpgoclient.StartLaunchResponse, error)
 	FinishLaunch(status string, endTimeStringRFC3339 string) (rpgoclient.FinishLaunchResponse, error)
-	StartTestItem(name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (string, error)
-	StartTestItemId(parent string, name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (string, error)
+	StartTestItem(name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (rpgoclient.StartTestItemResponse, error)
+	StartTestItemId(parent string, name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (rpgoclient.StartTestItemResponse, error)
 	FinishTestItem(status string, endTimeStringRFC3339 string, issue map[string]interface{}) (string, error)
 	FinishTestItemId(parent string, status string, endTimeStringRFC3339 string, issue map[string]interface{}) (string, error)
 	LinkIssue(itemId int, ticketId string, link string) (string, error)
 	Log(message string, level string) (string, error)
 	LogId(id string, message string, level string) (string, error)
 	LogBatch(messages []rpgoclient.LogPayload) error
+	GetItemIdByUUID(uuid string) (rpgoclient.GetItemResponse, error)
 	GetBaseUrl() string
 	GetLaunchId() string
 	GetProject() string
@@ -308,10 +309,10 @@ func sortTestObjectsByStartTime(to []*TestObject) {
 	})
 }
 
-func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) error {
+func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) {
 	f, err := os.Open(jsonFilename)
 	if err != nil {
-		log.Fatal(err)
+		m.l.Fatal(err)
 	}
 	events := parseEventsBatch(f)
 	testObjects, tosByName := eventsToObjects(events)
@@ -321,8 +322,13 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	mustFinishTestEntities := make([]*RPTestEntity, 0)
 
 	earliestInReport, latestInReport := getTimeBounds(events)
-	tags := strings.Split(tag, ",")
-	_, err = m.c.StartLaunch(runName, runName, earliestInReport.Format(time.RFC3339), tags, "DEFAULT")
+	var tags []string
+	if tag == "" {
+		tags = nil
+	} else {
+		tags = strings.Split(tag, ",")
+	}
+	launchData, err := m.c.StartLaunch(runName, runName, earliestInReport.Format(time.RFC3339), tags, "DEFAULT")
 	if err != nil {
 		m.l.Fatalf("error creating launch: %s", err)
 	}
@@ -353,17 +359,26 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 					parent = alreadyStartedTestEntities[parentName].TestItemId
 					itemType = "STEP"
 				}
-				id, err := m.c.StartTestItemId(parent, tpath, itemType, startTime, tpath, nil, nil)
+				startData, err := m.c.StartTestItemId(parent, tpath, itemType, startTime, tpath, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
-				m.l.Debugf("test started: name: %s, id: %s\n", tpath, id)
-				alreadyStartedTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0}
-				//mustFinishTestEntities[tpath] = &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTimeStr, to.Status, 0}
-				mustFinishTestEntities = append(mustFinishTestEntities, &RPTestEntity{id, to.IssueTicket, to.IssueURL, endTime, to.Status, 0})
+				m.l.Debugf("test started: name: %s, id: %s\n", tpath, startData.Id)
+				te := &RPTestEntity{
+					startData.Id,
+					strconv.Itoa(launchData.Number),
+					startData.UniqueId,
+					to.IssueTicket,
+					to.IssueURL,
+					endTime,
+					to.Status,
+					0,
+				}
+				alreadyStartedTestEntities[tpath] = te
+				mustFinishTestEntities = append(mustFinishTestEntities, te)
 
-				m.l.Debugf("uploading logs to id: %s\n", id)
-				_, err = m.c.LogId(id, strings.Join(to.OutputBatch, ""), "INFO")
+				m.l.Debugf("uploading logs to id: %s\n", startData.Id)
+				_, err = m.c.LogId(startData.Id, strings.Join(to.OutputBatch, ""), "INFO")
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -378,7 +393,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 		}
 		var issue map[string]interface{}
 		if startedObj.IssueURL != "" {
-			issue = m.linkIssue(startedObj)
+			issue = m.issuePayload(startedObj)
 		}
 		if _, err := m.c.FinishTestItemId(startedObj.TestItemId, stat, startedObj.EndTime, issue); err != nil {
 			log.Fatal(err)
@@ -387,13 +402,32 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	// status is calculated automatically
 	resp, err := m.c.FinishLaunch("FAILED", latestInReport.Format(time.RFC3339))
 	if err != nil {
-		log.Fatal(err)
+		m.l.Fatal(err)
 	}
+	m.linkIssues(mustFinishTestEntities)
 	m.l.Infof(InfoColor, fmt.Sprintf("report launch url: %s", resp.Link))
-	return nil
 }
 
-func (m *RPAgent) linkIssue(startedObj *RPTestEntity) map[string]interface{} {
+func (m *RPAgent) linkIssues(e []*RPTestEntity) {
+	for _, startedObj := range e {
+		if startedObj.IssueURL != "" {
+			res, err := m.c.GetItemIdByUUID(startedObj.TestItemId)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("res of link: %v\n", res)
+			if startedObj.Status == "PASS" {
+				fmt.Printf("cannot link issue in PASSED test")
+				continue
+			}
+			if _, err := m.c.LinkIssue(res.Id, startedObj.IssueTicket, startedObj.IssueURL); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+}
+
+func (m *RPAgent) issuePayload(startedObj *RPTestEntity) map[string]interface{} {
 	issue := make(map[string]interface{})
 	issue["issueType"] = PRODUCT_BUG_TYPE
 	issue["comment"] = startedObj.IssueURL
@@ -405,10 +439,11 @@ func (m *RPAgent) linkIssue(startedObj *RPTestEntity) map[string]interface{} {
 			"url":        startedObj.IssueURL,
 		},
 	}
-	m.l.Infof("item with issue: %s", startedObj.TestItemId)
-	//if _, err := m.c.LinkIssue(14444, startedObj.IssueTicket, startedObj.IssueURL); err != nil {
-	//	log.Fatal(err)
-	//}
+	m.l.Infof("linking item with issue:\nlaunchNumber: %s\ntestItemId: %s\nuniqId: %s",
+		startedObj.LaunchNumber,
+		startedObj.TestItemId,
+		startedObj.UniqTestItemId,
+	)
 	return issue
 }
 

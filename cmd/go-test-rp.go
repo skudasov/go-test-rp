@@ -36,9 +36,6 @@ func main() {
 	if *rpToken == "" {
 		log.Fatal("provide your report portal token")
 	}
-	if *tagStr == "" {
-		log.Fatal("provide your report portal tags separated by comma, ex. v0.0.1,unit")
-	}
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -51,10 +48,7 @@ func main() {
 	}
 
 	a := integration.NewRPAgent(*rpUrl, *rpProject, *rpToken, *btsProject, *btsUrl, *dumptransport, integration.WithForce(*force))
-	err := a.Report(*jsonReportPath, *runName, *rpProject, *tagStr)
-	if err != nil {
-		log.Fatal(err)
-	}
+	a.Report(*jsonReportPath, *runName, *rpProject, *tagStr)
 	pprof.StopCPUProfile()
 	if a.JsonReportErrorsNum > 0 && !*force {
 		// if any errors of broken tests are present fail build

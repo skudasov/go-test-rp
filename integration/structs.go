@@ -12,12 +12,14 @@ type TestEvent struct {
 }
 
 type RPTestEntity struct {
-	TestItemId  string
-	IssueTicket string
-	IssueURL    string
-	EndTime     string
-	Status      string
-	FailedTests int
+	TestItemId     string
+	LaunchNumber   string
+	UniqTestItemId string
+	IssueTicket    string
+	IssueURL       string
+	EndTime        string
+	Status         string
+	FailedTests    int
 }
 
 type TestRuntimeInfo struct {
