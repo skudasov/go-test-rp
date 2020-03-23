@@ -330,7 +330,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	}
 	launchData, err := m.c.StartLaunch(runName, runName, earliestInReport.Format(time.RFC3339), tags, "DEFAULT")
 	if err != nil {
-		m.l.Fatalf("error creating launch: %s", err)
+		m.l.Fatal(err)
 	}
 
 	sortTestObjectsByStartTime(testObjects)
@@ -415,9 +415,8 @@ func (m *RPAgent) linkIssues(e []*RPTestEntity) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("res of link: %v\n", res)
 			if startedObj.Status == "PASS" {
-				fmt.Printf("cannot link issue in PASSED test")
+				fmt.Printf("cannot link issue in PASSED test: %s", startedObj.TestItemId)
 				continue
 			}
 			if _, err := m.c.LinkIssue(res.Id, startedObj.IssueTicket, startedObj.IssueURL); err != nil {
