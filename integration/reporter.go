@@ -35,7 +35,7 @@ var (
 
 type Clientable interface {
 	StartLaunch(name string, description string, startTimeStringRFC3339 string, tags []string, mode string) (string, error)
-	FinishLaunch(status string, endTimeStringRFC3339 string) (string, error)
+	FinishLaunch(status string, endTimeStringRFC3339 string) (rpgoclient.FinishLaunchResponse, error)
 	StartTestItem(name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (string, error)
 	StartTestItemId(parent string, name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (string, error)
 	FinishTestItem(status string, endTimeStringRFC3339 string, issue map[string]interface{}) (string, error)
@@ -373,6 +373,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	for _, startedObj := range mustFinishTestEntities {
 		stat := eventActionStatusToRPStatus(startedObj.Status)
 		if stat == "" {
+			m.l.Infof("status is empty, setting FAILED")
 			stat = "FAILED"
 		}
 		var issue map[string]interface{}
@@ -384,10 +385,11 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 		}
 	}
 	// status is calculated automatically
-	if _, err := m.c.FinishLaunch("FAILED", latestInReport.Format(time.RFC3339)); err != nil {
+	resp, err := m.c.FinishLaunch("FAILED", latestInReport.Format(time.RFC3339))
+	if err != nil {
 		log.Fatal(err)
 	}
-	m.l.Infof(InfoColor, fmt.Sprintf("report launch url: %s", m.RunUrl(projectName)))
+	m.l.Infof(InfoColor, fmt.Sprintf("report launch url: %s", resp.Link))
 	return nil
 }
 
