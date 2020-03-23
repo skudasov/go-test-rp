@@ -3,7 +3,7 @@ go-test json integration to Report Portal integration
 
 #### Install
 ```
-go get github.com/f4hrenh9it/go-test-rp
+go get github.com/skudasov/go-test-rp
 go install cmd/go-test-rp.go
 ```
 
