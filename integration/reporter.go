@@ -23,6 +23,10 @@ const (
 	SYSTEM_ISSUE_BUG_TYPE = "si001"
 )
 
+const (
+	TRUrl = "https://insolar.testrail.io/index.php?/cases/view/%d"
+)
+
 var (
 	//issueRe           = regexp.MustCompile("issue_link:(.+),.*issue_type:(.+)")
 	testStatusRe    = regexp.MustCompile(`--- (.*):`)
@@ -148,15 +152,22 @@ func EventsToTestObjects(events map[string][]*TestEvent) ([]*TestObject, map[str
 	return tests, testsByName
 }
 
-func (m *RPAgent) testrailTestcaseDesc(to *TestObject) string {
-	return "C" + strconv.Itoa(to.CaseID) + " " + to.Desc
-}
-
 func eventsToObjects(events []*TestEvent) ([]*TestObject, map[string]*TestObject) {
 	groupedTestEventsBatch := groupEventsByTest(events)
 	//debugDumpEventsToFile(groupedTestEventsBatch)
 	tos, tosByName := EventsToTestObjects(groupedTestEventsBatch)
 	return tos, tosByName
+}
+
+func RPTestData(tpath string, testObj *TestObject) (name string, desc string) {
+	if testObj.CaseID != 0 {
+		name = testRailTestCase(testObj)
+		desc = testRailTestDesc(testObj)
+	} else {
+		name = tpath
+		desc = tpath
+	}
+	return
 }
 
 // startEntitiesHierarchy starts RP test entities hierarchically, using test path
@@ -183,12 +194,6 @@ func (m *RPAgent) startEntitiesHierarchy(
 					m.l.Debugf("module found, setting test startTime = launch startTime")
 					startTime = earliestInReport.Format(time.RFC3339)
 				}
-				var testName string
-				if testObj.CaseID != 0 {
-					testName = m.testrailTestcaseDesc(testObj)
-				} else {
-					testName = tpath
-				}
 				m.l.Debugf("starting new test entity:\n tpath: %s\n parent: %s\n duration: %d\nstart: %s\n end: %s\n",
 					tpath,
 					to.ParentName,
@@ -201,7 +206,8 @@ func (m *RPAgent) startEntitiesHierarchy(
 					parent = alreadyStartedTestEntities[parentName].TestItemId
 					itemType = "STEP"
 				}
-				startData, err := m.c.StartTestItemId(parent, testName, itemType, startTime, tpath, nil, nil)
+				tname, tdesc := RPTestData(tpath, testObj)
+				startData, err := m.c.StartTestItemId(parent, tname, itemType, startTime, tdesc, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -262,7 +268,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	}
 	mustFinishTestEntities := m.startEntitiesHierarchy(launchData, events, testObjects, tosByName)
 	m.finishEntities(mustFinishTestEntities)
-	// status is calculated automatically
+	// status is calculated automatically in RP 5.0.0, but any valid status still required
 	resp, err := m.c.FinishLaunch("FAILED", latestInReport.Format(time.RFC3339))
 	if err != nil {
 		m.l.Fatal(err)

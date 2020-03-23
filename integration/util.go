@@ -2,9 +2,11 @@ package integration
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -86,4 +88,12 @@ func UniqTestKey(e *TestEvent) string {
 	} else {
 		return e.Package
 	}
+}
+
+func testRailTestCase(to *TestObject) string {
+	return fmt.Sprintf("C%s %s", strconv.Itoa(to.CaseID), to.Desc)
+}
+
+func testRailTestDesc(to *TestObject) string {
+	return fmt.Sprintf(TRUrl, to.CaseID)
 }
