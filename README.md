@@ -31,4 +31,4 @@ You can log issues in tests like
 ```go
 t.Logf("https://insolar.atlassian.net/browse/SAIV-986")
 ```
-by default all issues are AUTOMATION_BUG type
+by default all issues are PRODUCT_BUG type
