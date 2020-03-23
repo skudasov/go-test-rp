@@ -6,13 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/skudasov/rpgoclient"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
-	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -32,36 +29,6 @@ var (
 	testSkipIssueRe = regexp.MustCompile(`https://insolar\.atlassian\.net/browse/([A-Z]+-\d+)`)
 	testCaseIdRe    = regexp.MustCompile(`C(\d{1,8})\s(.*)`)
 )
-
-type Clientable interface {
-	StartLaunch(name string, description string, startTimeStringRFC3339 string, tags []string, mode string) (rpgoclient.StartLaunchResponse, error)
-	FinishLaunch(status string, endTimeStringRFC3339 string) (rpgoclient.FinishLaunchResponse, error)
-	StartTestItem(name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (rpgoclient.StartTestItemResponse, error)
-	StartTestItemId(parent string, name string, itemType string, startTimeStringRFC3339 string, description string, tags []string, parameters []map[string]string) (rpgoclient.StartTestItemResponse, error)
-	FinishTestItem(status string, endTimeStringRFC3339 string, issue map[string]interface{}) (string, error)
-	FinishTestItemId(parent string, status string, endTimeStringRFC3339 string, issue map[string]interface{}) (string, error)
-	LinkIssue(itemId int, ticketId string, link string) (string, error)
-	Log(message string, level string) (string, error)
-	LogId(id string, message string, level string) (string, error)
-	LogBatch(messages []rpgoclient.LogPayload) error
-	GetItemIdByUUID(uuid string) (rpgoclient.GetItemResponse, error)
-	GetBaseUrl() string
-	GetLaunchId() string
-	GetProject() string
-	GetToken() string
-}
-
-type RPAgent struct {
-	c                   Clientable
-	BtsProject          string
-	BtsUrl              string
-	Events              []*TestEvent
-	JsonReportErrorsNum int
-	Force               bool
-	MaxRps              int
-	TestLogBatch        []rpgoclient.LogPayload
-	l                   *zap.SugaredLogger
-}
 
 // Creates new Report Portal agent
 func NewRPAgent(baseUrl string, project string, token string, btsProject string, btsUrl string, dumptransport bool, options ...func(*RPAgent) error) *RPAgent {
@@ -87,77 +54,10 @@ func NewRPAgent(baseUrl string, project string, token string, btsProject string,
 	return rpa
 }
 
-func (m *RPAgent) SetLogger(l *zap.SugaredLogger) {
-	m.l = l
-}
-
-func (m *RPAgent) SetForce(force bool) {
-	m.Force = force
-}
-
-func WithRpClient(client Clientable) func(c *RPAgent) error {
-	return func(rpa *RPAgent) error {
-		rpa.c = client
-		return nil
-	}
-}
-
-func WithVerbosity(verbosity string) func(client *RPAgent) error {
-	return func(c *RPAgent) error {
-		c.l = NewLogger(verbosity)
-		return nil
-	}
-}
-
 func WithForce(force bool) func(client *RPAgent) error {
 	return func(c *RPAgent) error {
 		c.Force = force
 		return nil
-	}
-}
-
-func WithMaxRps(maxRps int) func(client *RPAgent) error {
-	return func(c *RPAgent) error {
-		c.MaxRps = maxRps
-		return nil
-	}
-}
-
-func (m *RPAgent) RunUrl(projectName string) string {
-	return path.Join(m.c.GetBaseUrl(), "ui", "#"+projectName, "launches", "all", m.c.GetLaunchId())
-}
-
-// TestObject represents test data with aggregated log batch
-type TestObject struct {
-	FullPath       string
-	FullPathCrumbs []string
-	ParentName     string
-	Parent         *TestObject
-	Package        string
-	Status         string
-	CaseID         int
-	Desc           string
-	GoTestName     string
-	IssueURL       string
-	IssueTicket    string
-	RawEvents      []*TestEvent
-	StartTime      time.Time
-	EndTime        time.Time
-	Elapsed        time.Duration
-	OutputBatch    []string
-}
-
-func UniqTestKey(e *TestEvent) string {
-	if e.Test != "" {
-		var testName string
-		if strings.Contains(e.Test, "/") {
-			testName = strings.Join(strings.Split(e.Test, "/"), "|")
-		} else {
-			testName = e.Test
-		}
-		return e.Package + "|" + testName
-	} else {
-		return e.Package
 	}
 }
 
@@ -193,21 +93,6 @@ func groupEventsByTest(events []*TestEvent) map[string][]*TestEvent {
 		}
 	}
 	return eventsByTest
-}
-
-func breadCrumbsFromFullPath(fullPath string) []string {
-	fpath := strings.Split(fullPath, "|")
-	bCrumbs := make([]string, 0)
-	var nextPath string
-	for _, fp := range fpath {
-		if nextPath == "" {
-			nextPath = fp
-		} else {
-			nextPath = strings.Join([]string{nextPath, fp}, "|")
-		}
-		bCrumbs = append(bCrumbs, nextPath)
-	}
-	return bCrumbs
 }
 
 // EventsToTestObjects parses event batches to construct TestObjects, extracting caseID, Description, Status and IssueURL
@@ -263,37 +148,8 @@ func EventsToTestObjects(events map[string][]*TestEvent) ([]*TestObject, map[str
 	return tests, testsByName
 }
 
-// Getting earliest and latest times to use it in StartItem or FinishItem calls
-func getTimeBounds(events []*TestEvent) (time.Time, time.Time) {
-	return events[0].Time, events[len(events)-1].Time
-}
-
-func getTimeBoundsByElapsed(events []*TestEvent) (time.Time, time.Time) {
-	startTime := events[0].Time
-	finishTime := events[0].Time.Add(time.Duration(events[0].Elapsed) * time.Second)
-	return startTime, finishTime
-}
-
 func (m *RPAgent) testrailTestcaseDesc(to *TestObject) string {
-	return strconv.Itoa(to.CaseID) + " " + to.Desc
-}
-
-func debugDumpEventsToFile(groupedTestEventsBatch map[string][]*TestEvent) {
-	for ename, e := range groupedTestEventsBatch {
-		f, err := os.Create(strings.ReplaceAll(ename, "/", "_") + ".tlog")
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, ev := range e {
-			ev.Output = ""
-			d, err := json.Marshal(ev)
-			if err != nil {
-				log.Fatal(err)
-			}
-			f.Write([]byte(string(d) + "\n"))
-		}
-		f.Close()
-	}
+	return "C" + strconv.Itoa(to.CaseID) + " " + to.Desc
 }
 
 func eventsToObjects(events []*TestEvent) ([]*TestObject, map[string]*TestObject) {
@@ -303,37 +159,17 @@ func eventsToObjects(events []*TestEvent) ([]*TestObject, map[string]*TestObject
 	return tos, tosByName
 }
 
-func sortTestObjectsByStartTime(to []*TestObject) {
-	sort.SliceStable(to, func(i, j int) bool {
-		return to[i].StartTime.Before(to[j].StartTime)
-	})
-}
-
-func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) {
-	f, err := os.Open(jsonFilename)
-	if err != nil {
-		m.l.Fatal(err)
-	}
-	events := parseEventsBatch(f)
-	testObjects, tosByName := eventsToObjects(events)
-	m.l.Infof(InfoColor, fmt.Sprintf("sending report to: %s, project: %s", m.c.GetBaseUrl(), m.c.GetProject()))
-
-	alreadyStartedTestEntities := make(map[string]*RPTestEntity)
-	mustFinishTestEntities := make([]*RPTestEntity, 0)
-
-	earliestInReport, latestInReport := getTimeBounds(events)
-	var tags []string
-	if tag == "" {
-		tags = nil
-	} else {
-		tags = strings.Split(tag, ",")
-	}
-	launchData, err := m.c.StartLaunch(runName, runName, earliestInReport.Format(time.RFC3339), tags, "DEFAULT")
-	if err != nil {
-		m.l.Fatal(err)
-	}
-
+// startEntitiesHierarchy starts RP test entities hierarchically, using test path
+func (m *RPAgent) startEntitiesHierarchy(
+	launchData rpgoclient.StartLaunchResponse,
+	events []*TestEvent,
+	testObjects []*TestObject,
+	tosByName map[string]*TestObject,
+) []*RPTestItem {
+	alreadyStartedTestEntities := make(map[string]*RPTestItem)
+	mustFinishTestEntities := make([]*RPTestItem, 0)
 	sortTestObjectsByStartTime(testObjects)
+	earliestInReport, _ := getTimeBounds(events)
 	for _, to := range testObjects {
 		parent := ""
 		itemType := "TEST"
@@ -347,6 +183,12 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 					m.l.Debugf("module found, setting test startTime = launch startTime")
 					startTime = earliestInReport.Format(time.RFC3339)
 				}
+				var testName string
+				if testObj.CaseID != 0 {
+					testName = m.testrailTestcaseDesc(testObj)
+				} else {
+					testName = tpath
+				}
 				m.l.Debugf("starting new test entity:\n tpath: %s\n parent: %s\n duration: %d\nstart: %s\n end: %s\n",
 					tpath,
 					to.ParentName,
@@ -359,12 +201,12 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 					parent = alreadyStartedTestEntities[parentName].TestItemId
 					itemType = "STEP"
 				}
-				startData, err := m.c.StartTestItemId(parent, tpath, itemType, startTime, tpath, nil, nil)
+				startData, err := m.c.StartTestItemId(parent, testName, itemType, startTime, tpath, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
 				m.l.Debugf("test started: name: %s, id: %s\n", tpath, startData.Id)
-				te := &RPTestEntity{
+				te := &RPTestItem{
 					startData.Id,
 					strconv.Itoa(launchData.Number),
 					startData.UniqueId,
@@ -385,20 +227,41 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 			}
 		}
 	}
-	for _, startedObj := range mustFinishTestEntities {
+	return mustFinishTestEntities
+}
+
+func (m *RPAgent) finishEntities(e []*RPTestItem) {
+	for _, startedObj := range e {
 		stat := eventActionStatusToRPStatus(startedObj.Status)
 		if stat == "" {
 			m.l.Infof("status is empty, setting FAILED")
 			stat = "FAILED"
 		}
 		var issue map[string]interface{}
-		if startedObj.IssueURL != "" {
+		if startedObj.IssueURL != "" && startedObj.Status != "PASS" {
 			issue = m.issuePayload(startedObj)
 		}
 		if _, err := m.c.FinishTestItemId(startedObj.TestItemId, stat, startedObj.EndTime, issue); err != nil {
 			log.Fatal(err)
 		}
 	}
+}
+
+func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) {
+	f, err := os.Open(jsonFilename)
+	if err != nil {
+		m.l.Fatal(err)
+	}
+	events := parseEventsBatch(f)
+	testObjects, tosByName := eventsToObjects(events)
+	m.l.Infof(InfoColor, fmt.Sprintf("sending report to: %s, project: %s", m.c.GetBaseUrl(), m.c.GetProject()))
+	earliestInReport, latestInReport := getTimeBounds(events)
+	launchData, err := m.c.StartLaunch(runName, runName, earliestInReport.Format(time.RFC3339), parseTags(tag), "DEFAULT")
+	if err != nil {
+		m.l.Fatal(err)
+	}
+	mustFinishTestEntities := m.startEntitiesHierarchy(launchData, events, testObjects, tosByName)
+	m.finishEntities(mustFinishTestEntities)
 	// status is calculated automatically
 	resp, err := m.c.FinishLaunch("FAILED", latestInReport.Format(time.RFC3339))
 	if err != nil {
@@ -408,17 +271,20 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	m.l.Infof(InfoColor, fmt.Sprintf("report launch url: %s", resp.Link))
 }
 
-func (m *RPAgent) linkIssues(e []*RPTestEntity) {
+// linkIssues links issues via link api
+// in RP 5.0.0 adding bts data in FinishItem payload doesn't link issue automatically
+func (m *RPAgent) linkIssues(e []*RPTestItem) {
 	for _, startedObj := range e {
-		if startedObj.IssueURL != "" {
+		if startedObj.IssueURL != "" && startedObj.Status != "PASS" {
 			res, err := m.c.GetItemIdByUUID(startedObj.TestItemId)
 			if err != nil {
 				log.Fatal(err)
 			}
-			if startedObj.Status == "PASS" {
-				fmt.Printf("cannot link issue in PASSED test: %s", startedObj.TestItemId)
-				continue
-			}
+			m.l.Infof("linking item with issue:\nlaunchNumber: %s\ntestItemId: %s\nuniqId: %s",
+				startedObj.LaunchNumber,
+				startedObj.TestItemId,
+				startedObj.UniqTestItemId,
+			)
 			if _, err := m.c.LinkIssue(res.Id, startedObj.IssueTicket, startedObj.IssueURL); err != nil {
 				log.Fatal(err)
 			}
@@ -426,7 +292,8 @@ func (m *RPAgent) linkIssues(e []*RPTestEntity) {
 	}
 }
 
-func (m *RPAgent) issuePayload(startedObj *RPTestEntity) map[string]interface{} {
+// issuePayload creates payload with bug tracker system data
+func (m *RPAgent) issuePayload(startedObj *RPTestItem) map[string]interface{} {
 	issue := make(map[string]interface{})
 	issue["issueType"] = PRODUCT_BUG_TYPE
 	issue["comment"] = startedObj.IssueURL
@@ -438,22 +305,5 @@ func (m *RPAgent) issuePayload(startedObj *RPTestEntity) map[string]interface{} 
 			"url":        startedObj.IssueURL,
 		},
 	}
-	m.l.Infof("linking item with issue:\nlaunchNumber: %s\ntestItemId: %s\nuniqId: %s",
-		startedObj.LaunchNumber,
-		startedObj.TestItemId,
-		startedObj.UniqTestItemId,
-	)
 	return issue
-}
-
-func eventActionStatusToRPStatus(event string) string {
-	switch event {
-	case "PASS":
-		return "PASSED"
-	case "FAIL":
-		return "FAILED"
-	case "SKIP":
-		return "SKIPPED"
-	}
-	return ""
 }
