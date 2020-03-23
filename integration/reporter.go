@@ -184,7 +184,6 @@ func groupEventsByTest(events []*TestEvent) map[string][]*TestEvent {
 		k := UniqTestKey(e)
 		testNames[k] = 1
 	}
-	fmt.Printf("uniq tests: %d\n", len(testNames))
 	for uniqTest := range testNames {
 		for _, e := range events {
 			if UniqTestKey(e) == uniqTest {
@@ -331,19 +330,18 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	sortTestObjectsByStartTime(testObjects)
 	for _, to := range testObjects {
 		parent := ""
-		//itemType := "TEST"
+		itemType := "TEST"
 		for tIdx, tpath := range to.FullPathCrumbs {
 			// start test items, starting from parents to child, add to alreadyStartedTestEntities
 			if _, ok := alreadyStartedTestEntities[tpath]; !ok {
-				fmt.Printf("tpath: %s\n", tpath)
 				testObj := tosByName[tpath]
 				startTime := testObj.StartTime.Format(time.RFC3339)
 				endTime := testObj.EndTime.Format(time.RFC3339)
 				if len(strings.Split(tpath, "|")) == 1 {
-					m.l.Infof("module found, setting test startTime = launch startTime")
+					m.l.Debugf("module found, setting test startTime = launch startTime")
 					startTime = earliestInReport.Format(time.RFC3339)
 				}
-				m.l.Infof("starting new test entity:\n tpath: %s\n parent: %s\n duration: %d\nstart: %s\n end: %s\n",
+				m.l.Debugf("starting new test entity:\n tpath: %s\n parent: %s\n duration: %d\nstart: %s\n end: %s\n",
 					tpath,
 					to.ParentName,
 					to.Elapsed,
@@ -353,9 +351,9 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 				if tIdx > 0 {
 					parentName := testObj.ParentName
 					parent = alreadyStartedTestEntities[parentName].TestItemId
-					//itemType = "STEP"
+					itemType = "STEP"
 				}
-				id, err := m.c.StartTestItemId(parent, tpath, "STEP", startTime, tpath, nil, nil)
+				id, err := m.c.StartTestItemId(parent, tpath, itemType, startTime, tpath, nil, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
