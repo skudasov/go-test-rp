@@ -253,7 +253,7 @@ func (m *RPAgent) finishEntities(e []*RPTestItem) {
 	}
 }
 
-func (m *RPAgent) Report(jsonFilename string, runName string, projectName string, tag string) {
+func (m *RPAgent) Report(jsonFilename string, runName string, runDesc string, projectName string, tag string) {
 	f, err := os.Open(jsonFilename)
 	if err != nil {
 		m.l.Fatal(err)
@@ -262,7 +262,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, projectName string
 	testObjects, tosByName := eventsToObjects(events)
 	m.l.Infof(InfoColor, fmt.Sprintf("sending report to: %s, project: %s", m.c.GetBaseUrl(), m.c.GetProject()))
 	earliestInReport, latestInReport := getTimeBounds(events)
-	launchData, err := m.c.StartLaunch(runName, runName, earliestInReport.Format(time.RFC3339), parseTags(tag), "DEFAULT")
+	launchData, err := m.c.StartLaunch(runName, runDesc, earliestInReport.Format(time.RFC3339), parseTags(tag), "DEFAULT")
 	if err != nil {
 		m.l.Fatal(err)
 	}

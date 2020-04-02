@@ -11,6 +11,7 @@ import (
 func main() {
 	jsonReportPath := flag.String("json_report", "", "path to go test json report")
 	runName := flag.String("rp_run_name", "", "testrun name")
+	runDesc := flag.String("rp_run_desc", "", "testrun description")
 	rpProject := flag.String("rp_project", "", "report portal project")
 	rpUrl := flag.String("rp_url", "", "report portal base url")
 	rpToken := flag.String("rp_token", "", "report portal token")
@@ -26,6 +27,9 @@ func main() {
 	}
 	if *runName == "" {
 		log.Fatal("provide any viable run name, ex. -rp_run_name *your_project_name*")
+	}
+	if *runDesc == "" {
+		log.Fatal("provide any viable run description, ex. -rp_run_desc *your_project_description*")
 	}
 	if *rpProject == "" {
 		log.Fatal("provide your report portal project name, ex. -rp_project")
@@ -48,8 +52,7 @@ func main() {
 	}
 
 	a := integration.NewRPAgent(*rpUrl, *rpProject, *rpToken, *btsProject, *btsUrl, *dumptransport, integration.WithForce(*force))
-	a.Report(*jsonReportPath, *runName, *rpProject, *tagStr)
-	pprof.StopCPUProfile()
+	a.Report(*jsonReportPath, *runName, *runDesc, *rpProject, *tagStr)
 	if a.JsonReportErrorsNum > 0 && !*force {
 		// if any errors of broken tests are present fail build
 		os.Exit(1)

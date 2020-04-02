@@ -13,6 +13,7 @@ go install cmd/go-test-rp.go
 | --json_report | -                            | go test json file      |
 | --rp_project  | -                            | RP project name        |
 | --rp_run_name | -                            | RP run name            |
+| --rp_run_desc | -                            | RP run description     |
 | --rp_url      | -                            | RP url                 |
 | --rp_token    | -                            | RP token (uuid)        |
 | --rp_tags     | -                            | test run tags          |
@@ -20,12 +21,15 @@ go install cmd/go-test-rp.go
 
 ```
 go-test-rp --json_report testdata/parallel-report.json\
- --rp_run_name runName --rp_url https://rp.dev.insolar.io\
-  --rp_project ***\
-   --rp_token ***\
-   --rp_tags e2e,someothertag\
-    --force
+ --rp_run_name runName\
+ --rp_run_desc runDesc\
+ --rp_url https://rp.dev.insolar.io\
+ --rp_project ***\
+ --rp_token ***\
+ --rp_tags e2e,someothertag\
+ --force
 ```
+rp token is rp uuid you can find in profile
 
 You can log issues in tests like
 ```go
