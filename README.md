@@ -33,6 +33,6 @@ rp token is rp uuid you can find in profile
 
 You can log issues in tests like
 ```go
-t.Logf("https://insolar.atlassian.net/browse/SAIV-986")
+t.Logf("issue_link:%s,issue_type:%s", issueLink, issueType)
 ```
 by default all issues are PRODUCT_BUG type
