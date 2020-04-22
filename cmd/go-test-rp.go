@@ -10,6 +10,7 @@ import (
 
 func main() {
 	jsonReportPath := flag.String("json_report", "", "path to go test json report")
+	loglevel := flag.String("log_level", "info", "logging level: debug, info")
 	runName := flag.String("rp_run_name", "", "testrun name")
 	runDesc := flag.String("rp_run_desc", "", "testrun description")
 	rpProject := flag.String("rp_project", "", "report portal project")
@@ -22,6 +23,9 @@ func main() {
 	force := flag.Bool("force", false, "if true, exit code will be 0 even if errors")
 	dumptransport := flag.Bool("dumptransport", false, "debug http with bodies")
 	flag.Parse()
+	if *loglevel == "" {
+		log.Fatal("provide log level: debug, info")
+	}
 	if *jsonReportPath == "" {
 		log.Fatal("provide path to go test json report file using --json_report ex.json")
 	}
@@ -51,7 +55,7 @@ func main() {
 		}
 	}
 
-	a := integration.NewRPAgent(*rpUrl, *rpProject, *rpToken, *btsProject, *btsUrl, *dumptransport, integration.WithForce(*force))
+	a := integration.NewRPAgent(*rpUrl, *rpProject, *rpToken, *btsProject, *btsUrl, *loglevel, *dumptransport, integration.WithForce(*force))
 	a.Report(*jsonReportPath, *runName, *runDesc, *rpProject, *tagStr)
 	if a.JsonReportErrorsNum > 0 && !*force {
 		// if any errors of broken tests are present fail build

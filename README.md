@@ -11,6 +11,7 @@ go install cmd/go-test-rp.go
 | Param key     |           Default            | Description            |
 | ------------- | ---------------------------- | ---------------------- |
 | --json_report | -                            | go test json file      |
+| --log_level   | info                         | agent log level        |
 | --rp_project  | -                            | RP project name        |
 | --rp_run_name | -                            | RP run name            |
 | --rp_run_desc | -                            | RP run description     |

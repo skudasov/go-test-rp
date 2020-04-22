@@ -35,7 +35,7 @@ var (
 )
 
 // Creates new Report Portal agent
-func NewRPAgent(baseUrl string, project string, token string, btsProject string, btsUrl string, dumptransport bool, options ...func(*RPAgent) error) *RPAgent {
+func NewRPAgent(baseUrl string, project string, token string, btsProject string, btsUrl string, loglevel string, dumptransport bool, options ...func(*RPAgent) error) *RPAgent {
 	rpa := &RPAgent{
 		Events:              make([]*TestEvent, 0),
 		BtsProject:          btsProject,
@@ -44,7 +44,7 @@ func NewRPAgent(baseUrl string, project string, token string, btsProject string,
 		Force:               false,
 		MaxRps:              400,
 		TestLogBatch:        make([]rpgoclient.LogPayload, 0),
-		l:                   NewLogger("info"),
+		l:                   NewLogger(loglevel),
 	}
 	if rpa.c == nil {
 		rpa.c = rpgoclient.New(baseUrl, project, token, btsProject, btsUrl, dumptransport)
@@ -170,6 +170,17 @@ func RPTestData(tpath string, testObj *TestObject) (name string, desc string) {
 	return
 }
 
+func (m *RPAgent) validateHierarchy(testObjects []*TestObject, tosByName map[string]*TestObject) {
+	for _, to := range testObjects {
+		for _, tpath := range to.FullPathCrumbs {
+			_, ok := tosByName[tpath]
+			if !ok {
+				m.l.Fatalf("invalid test hierarchy in json report (see bug: https://github.com/golang/go/issues/35180), object %s not found, exiting", tpath)
+			}
+		}
+	}
+}
+
 // startEntitiesHierarchy starts RP test entities hierarchically, using test path
 func (m *RPAgent) startEntitiesHierarchy(
 	launchData rpgoclient.StartLaunchResponse,
@@ -261,6 +272,7 @@ func (m *RPAgent) Report(jsonFilename string, runName string, runDesc string, pr
 	events := parseEventsBatch(f)
 	testObjects, tosByName := eventsToObjects(events)
 	m.l.Infof(InfoColor, fmt.Sprintf("sending report to: %s, project: %s", m.c.GetBaseUrl(), m.c.GetProject()))
+	m.validateHierarchy(testObjects, tosByName)
 	earliestInReport, latestInReport := getTimeBounds(events)
 	launchData, err := m.c.StartLaunch(runName, runDesc, earliestInReport.Format(time.RFC3339), parseTags(tag), "DEFAULT")
 	if err != nil {

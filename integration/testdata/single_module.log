@@ -1,0 +1,9 @@
+{"Time":"2020-04-22T16:52:36.088248+03:00","Action":"run","Package":"github.com/skudasov/go-test-rp/testmodule2","Test":"TestRootModuleDummy"}
+{"Time":"2020-04-22T16:52:36.088998+03:00","Action":"output","Package":"github.com/skudasov/go-test-rp/testmodule2","Test":"TestRootModuleDummy","Output":"=== RUN   TestRootModuleDummy\n"}
+{"Time":"2020-04-22T16:52:36.089031+03:00","Action":"output","Package":"github.com/skudasov/go-test-rp/testmodule2","Test":"TestRootModuleDummy","Output":"--- FAIL: TestRootModuleDummy (0.00s)\n"}
+{"Time":"2020-04-22T16:52:36.089049+03:00","Action":"output","Package":"github.com/skudasov/go-test-rp/testmodule2","Test":"TestRootModuleDummy","Output":"    root_module_test.go:22: root module log\n"}
+{"Time":"2020-04-22T16:52:36.089066+03:00","Action":"fail","Package":"github.com/skudasov/go-test-rp/testmodule2","Test":"TestRootModuleDummy","Elapsed":0}
+{"Time":"2020-04-22T16:52:36.089087+03:00","Action":"output","Package":"github.com/skudasov/go-test-rp/testmodule2","Output":"FAIL\n"}
+{"Time":"2020-04-22T16:52:36.0891+03:00","Action":"output","Package":"github.com/skudasov/go-test-rp/testmodule2","Output":"exit val: 1\n"}
+{"Time":"2020-04-22T16:52:36.089145+03:00","Action":"output","Package":"github.com/skudasov/go-test-rp/testmodule2","Output":"FAIL\tgithub.com/skudasov/go-test-rp/testmodule2\t0.006s\n"}
+{"Time":"2020-04-22T16:52:36.089163+03:00","Action":"fail","Package":"github.com/skudasov/go-test-rp/testmodule2","Elapsed":0.006}
